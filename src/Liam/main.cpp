@@ -1,113 +1,66 @@
-#include <cstdio>
-#include <cmath>
-#include "xtensor/xtensor.hpp"
-#include "xtensor/xarray.hpp"
-#include "xtensor/xmath.hpp"
-#include "xtensor/xio.hpp"
-#include "xtensor/xeval.hpp"
-#include <chrono>
-#include <algorithm>
-
-#include <time.h>
-double get_cpu_time()
-{
-    return (double)clock() / CLOCKS_PER_SEC;
-}
-
-using namespace std;
-using namespace xt;
-
-double error(xtensor<double,1>&, xtensor<double,1>&);
-void tridiag_sym(xtensor<double,1>, xtensor<double,1>, xtensor<double,1>&);
+#include "eigen.h"
+#include <stdio.h>
 
 int main()
 {
-    int n = 10000;
-    
-    xtensor<double, 1> alpha = ones<double>({n});
-    xtensor<double, 1> beta = ones<double>({n-1});
-    xtensor<double, 1> b = zeros<double>({n});
-    xtensor<double, 1> analyt = ones<double>({n});
-    
-    alpha *= 2;
-    beta *= -1;
-    
-    
-    double N = static_cast<double>(n);
-    double j = 0;
-    for (unsigned long i = 0; i<n; i++)
+    const size_t dim = 500;
+    //Initialize matrices to zero and then change
+    //diagonals to allow vectorization
+
+    //Create an identity matrix
+    double **V = new double*[dim];
+    for(size_t i = 0; i<dim; i++)
     {
-        j = static_cast<double>(i);
-        b.at(i) = 100*exp(-10*j/N);
+        V[i] = new double[dim];
+        for(size_t j = 0; j<dim; j++)
+            V[i][j] = 0;
+        V[i][i] = 1; //Done this way to allow vectorization
     }
     
-    double t1 = get_cpu_time();
-    
-    tridiag_sym(alpha, beta, b);
-    b /= (n+2);
-    b /= (n+2);
-    
-    double t2 = get_cpu_time();
-    
-    printf("It took me %f seconds.\n",t2-t1);
-    
-    /* ----- Data output ----- */
-    
-    FILE *fp = fopen("solution.tsv","w");
-    int mod = 1000;
-    
-    for(unsigned long i = 0; i<n; i++)
+    //Initialize the matrix to diagonalize
+    double **A = new double*[dim];
+    for(size_t i = 0; i<dim; i++)
     {
-        if (!(i%mod))
-            fprintf(fp, "%f\n", b.at(i)); 
+        A[i] = new double[dim];
+        for(size_t j = 0; j<dim; j++)
+        {
+            A[i][j] = 0;
+        }
+    }
+    for(size_t i = 0; i<dim-1; i++)
+    {
+        A[i][i+1] = -1;
+        A[i+1][i] = -1;
     }
     
+    double rmax = 0.16;
+    double dr = rmax/dim;
+    for(size_t i = 0; i<dim; i++)
+    {
+        A[i][i] = 2 + (i*dr)*(i*dr);
+    }
+    
+    //Initialize variables for Jacobi diagonalization
+    classicalJacobi(A, V, dim, 0.00001);
+    
+    FILE* fp = fopen("A.csv","w");
+
+    for(size_t i = 0; i<dim; i++)
+    {
+        for(size_t j = 0; j<dim-1; j++)
+            fprintf(fp, "%f,", A[i][j]);
+        fprintf(fp, "%f\n", A[i][dim-1]);
+    }
     fclose(fp);
+
+    fp = fopen("V.csv","w");
+    for(size_t i = 0; i<dim; i++)
+    {
+        for(size_t j = 0; j<dim-1; j++)
+            fprintf(fp, "%f,", V[i][j]);
+        fprintf(fp, "%f\n", V[i][dim-1]);
+    }
+    fclose(fp);
+    
     return 0;
-}
-
-
-double error(xtensor<double,1> &approx, xtensor<double,1>&analyt)
-{
-    const unsigned long n = approx.shape()[0];
-    if (n != analyt.shape()[0])
-        throw "Vector sizes are different.";
-    
-    xtensor<double, 1> errors = zeros<double>({n});
-    
-    for (unsigned long i = 0; i<n; i++)
-    {
-        errors.at(i) = fabs(approx.at(i)-analyt.at(i))/analyt.at(i);
-    }
-    
-    return *max_element(errors.begin(),errors.end());
-}
-
-void tridiag_sym(xtensor<double, 1> alpha,
-    xtensor<double, 1> beta, xtensor<double, 1> &b)
-{
-    unsigned long n = alpha.shape()[0];
-    
-    auto temp = beta.at(0);
-    
-    for (unsigned int k = 1; k<n; k++)
-    {
-        temp = beta.at(k-1);
-        beta.at(k-1) = temp/alpha.at(k-1);
-        alpha.at(k) -= temp*beta.at(k-1);
-    }
-    
-    for (unsigned long k = 1; k<n; k++)
-    {
-        b.at(k) -= beta.at(k-1)*b.at(k-1);
-    }
-    
-    b.at(n-1) /= alpha.at(n-1);
-    
-    for (unsigned long k = n-2; k>0; k--)
-    {
-        b.at(k) = b.at(k)/alpha.at(k) - beta.at(k)*b.at(k+1);
-    }
-    
-    
 }
