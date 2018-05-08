@@ -2,15 +2,14 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-A = np.loadtxt("A.csv",delimiter=',')
-V = np.loadtxt("V.csv",delimiter=',')
+A = np.loadtxt("QD/A.csv",delimiter=',')
+V = np.loadtxt("QD/V.csv",delimiter=',')
 
 dim = A.shape[0]
 A_diag = np.zeros(dim)
 for i in range(dim):
 	A_diag[i] = A[i][i]
 
-A_diag *= dim/0.16
 print(A_diag)
 
 
@@ -36,7 +35,28 @@ for i in range(dim):
 		j3 = i
 print("j3: ",j3,"min3: ",min3)
 
-plt.plot(V[:,j])
-plt.plot(V[:,j2])
-plt.plot(V[:,j3])
+end = 500
+rvals = np.linspace(0,15,end)
+plt.plot(rvals,V[:end,j],label="$E_0 = $"+str(min))
+plt.plot(rvals,V[:end,j2],label="$E_1 = $"+str(min2))
+plt.plot(rvals,V[:end,j3],label="$E_2 = $"+str(min3))
+plt.xlabel("r")
+plt.ylabel("Wavefunction Amplitude")
+plt.legend()
+plt.savefig("plots/QDAmplitude.pdf")
+plt.show()
+
+pi = 3.1415926535897932384626433832975
+for i in range(dim):
+	V[i,j] *= 4*pi*V[i,j]
+	V[i,j2] *= 4*pi*V[i,j2]
+	V[i,j3] *= 4*pi*V[i,j3]
+
+plt.plot(rvals,V[:end,j],label="$E_0 = $"+str(min))
+plt.plot(rvals,V[:end,j2],label="$E_1 = $"+str(min2))
+plt.plot(rvals,V[:end,j3],label="$E_2 = $"+str(min3))
+plt.legend()
+plt.xlabel("r")
+plt.ylabel("Probability Density")
+plt.savefig("plots/QDDensity.pdf")
 plt.show()

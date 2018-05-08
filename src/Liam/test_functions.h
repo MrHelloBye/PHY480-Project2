@@ -3,6 +3,7 @@
 #include "eigen.h"
 #include <math.h>
 #include <stdio.h>
+#include <chrono>
 
 TEST_CASE("Check whether Jacobi preserves orthogonality")
 {
@@ -212,7 +213,7 @@ TEST_CASE("Check whether Cyclic Jacobi finds correct eigenpairs for Toeplitz")
 
 TEST_CASE("Check whether Householder result is tridiagonal and whether the decomposition gives the original matrix")
 {
-    size_t dim = 4;
+    size_t dim = 5000;
     double **T = new double*[dim];
     for(size_t i = 0; i<dim; i++)
     {
@@ -241,7 +242,15 @@ TEST_CASE("Check whether Householder result is tridiagonal and whether the decom
         Q[i][i] = 1;
     }
     
+    auto start = std::chrono::high_resolution_clock::now();
     householderTridiag(T, dim);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << "Time: ";
+    std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count() << "ns" << std::endl;
+    
+    /*
+
     householderOrthoMat(T, Q, dim);
     
     printf("\nFactored representation of T and Q matrices\n");
@@ -356,4 +365,6 @@ TEST_CASE("Check whether Householder result is tridiagonal and whether the decom
         printf("\n");
     }
     printf("\n");
+
+    */
 }

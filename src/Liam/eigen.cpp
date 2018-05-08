@@ -88,22 +88,24 @@ void cyclicJacobi(double **A, double **V, const size_t &dim, const double &tol)
     
     int counter = 0;
     double max = maxOff(A, dim, p, q);
-    while ( max >= tol)
+    while ( fabs(max) >= tol)
     {
+        max = 0.0;
         for(p = 1; p<dim; p++)
         {
             for(q = p+1; q<dim; q++)
             {
+                if(fabs(A[p][q]) > max)
+                    max = A[p][q];
                 symSchur(A, p, q, c, s);
                 jacobiSimilarityRotation(A, temp, dim, p, q, c, s);
                 jacobiRightRotation(V, temp, dim, p, q, c, s);
-                if(A[p][q] > max)
-                    max = A[p][q];
             }
+            printf("p: %d q: %d\n", p, q);
         }
         
         
-        printf("%d %f\n", counter, max);
+        printf("Pass: %d Max: %f\n", counter, max);
         counter++;
     }
 }
@@ -210,6 +212,7 @@ void householderTridiag(double **A, size_t const &dim)
     double *w = new double[dim];
     double sub_norm;
     
+    /*
     printf("\nInitial Matrix\n");
     for(size_t i = 0; i<dim; i++)
     {
@@ -218,7 +221,8 @@ void householderTridiag(double **A, size_t const &dim)
         printf("\n");
     }
     printf("\n");
-    
+    */
+
     for (size_t k = 0; k<dim-2; k++)
     {
         //sub_dim is the length of the householder vector, it is length
@@ -226,12 +230,14 @@ void householderTridiag(double **A, size_t const &dim)
         sub_dim = dim-(k+1);
         householderVector(A[k]+(k+1), sub_dim, v, b);
         
+        /*
         printf("dim: %zu, sub_dim: %zu\n",dim,sub_dim);
         printf("Beta: %f\n", b);
         printf("Vector: ");
         for(size_t i = 0; i<sub_dim; i++)
             printf("%f\t",v[i]);
         printf("\n");
+        */
         
         
         //Calculate p vector
@@ -275,6 +281,7 @@ void householderTridiag(double **A, size_t const &dim)
                 A[k+1+i][k+1+j] -= v[i]*w[j] + v[j]*w[i];
         }
         
+        /*
         for(size_t i = 0; i<dim; i++)
         {
             for(size_t j = 0; j<dim; j++)
@@ -282,6 +289,7 @@ void householderTridiag(double **A, size_t const &dim)
             printf("\n");
         }
         printf("\n");
+        */
     }
 }
 
@@ -340,8 +348,10 @@ void householderOrthoMat(double **T, double **Q, size_t const &dim)
         printf("k: %d\n",k);
         beta = T[k][k-1];
         v[k] = 1;
-        for(int i = k+1; i<dim; i++)
+        double temp;
+        for(int i = k+1; i<dim-(k-1); i++)
         {
+            printf("i: %d k: %d dim: %d\n", i,k,dim);
             v[i] = T[k-1+i][k-1];
             //printf("v[%d]: %f\n",i,v[i]);
         }
